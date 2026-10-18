@@ -51,7 +51,8 @@ class EditorTest(unittest.TestCase):
             with self.opener.open(self.base + path, body) as r:
                 return r.status, r.read().decode("utf-8")
         except urllib.error.HTTPError as e:
-            return e.code, e.headers.get("Location", "")
+            with e:
+                return e.code, e.headers.get("Location", "")
 
     def new_game(self):
         folder = os.path.join(self.tmp.name, "corrida-de-sapos")
@@ -91,6 +92,7 @@ class EditorTest(unittest.TestCase):
         request = urllib.request.Request(self.base + "/", headers={"Host": "evil.example:80"})
         with self.assertRaises(urllib.error.HTTPError) as e:
             urllib.request.urlopen(request)
+        e.exception.close()
         self.assertEqual(e.exception.code, 403)
 
     def test_save_properties(self):
@@ -145,8 +147,9 @@ class EditorTest(unittest.TestCase):
         self.new_game()
         with urllib.request.urlopen(self.base + "/sound?file=sounds/bip.wav") as r:
             self.assertEqual(r.read(4), b"RIFF")
-        with self.assertRaises(urllib.error.HTTPError):
+        with self.assertRaises(urllib.error.HTTPError) as e:
             urllib.request.urlopen(self.base + "/sound?file=game.json")
+        e.exception.close()
 
     def test_open_code_uses_the_chosen_editor(self):
         folder = self.new_game()
