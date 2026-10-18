@@ -1,0 +1,17 @@
+{
+  "id": "meu-jogo",
+  "name": "Meu Jogo",
+  "description": "Aperte o botão e ouça o bip.",
+  "version": "0.1.0",
+  "contract": 1,
+  "runtime": "python3",
+  "exec": "main.py",
+  "languages": ["pt-BR"],
+  "tags": ["a11y"],
+  "author": "",
+  "actions": {
+    "bip": {"r36s": "b", "key": ["space", "return"]},
+    "repetir": {"r36s": "select", "key": "tab"},
+    "sair": {"r36s": "a", "key": ["escape", "backspace"]}
+  }
+}
