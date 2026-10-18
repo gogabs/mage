@@ -5,7 +5,10 @@ campos opcionais a mais que o SDK e a engine entendem:
 
   "actions": as ações do jogo, no formato de Game.actions (r36s_a11y/actions.py);
   "export":  {"ignore": [...]} padrões de arquivos que não vão para a exportação,
-             além dos padrões de IGNORE.
+             além dos padrões de IGNORE; {"compress_sounds": false} manda os WAV
+             sem virar OGG (veja assets.py).
+
+Os assets ficam em sounds/, images/ e data/ (assets.py).
 """
 import fnmatch
 import json
@@ -88,6 +91,11 @@ def manifest_problems(manifest, path):
     exe = manifest.get("exec")
     if isinstance(exe, str) and not os.path.exists(os.path.join(path, exe)):
         problems.append("o exec aponta para %s, que não existe" % exe)
+    export = manifest.get("export")
+    if export is not None and not isinstance(export, dict):
+        problems.append("\"export\" precisa ser um objeto {...}")
+    elif export and not isinstance(export.get("compress_sounds", True), bool):
+        problems.append("\"compress_sounds\" em \"export\" deve ser true ou false")
     actions = manifest.get("actions")
     if actions is not None:
         try:
@@ -184,7 +192,8 @@ def create(path, name=None, author=None, log=print):
     folder = os.path.basename(os.path.normpath(path))
     name = name or folder
     gid = folder if ID_RE.match(folder) else make_id(folder)
-    os.makedirs(os.path.join(path, "sounds"), exist_ok=True)
+    for folder in ("sounds", "images", "data"):
+        os.makedirs(os.path.join(path, folder), exist_ok=True)
 
     with open(os.path.join(TEMPLATE, "game.json"), encoding="utf-8") as f:
         manifest = json.load(f)

@@ -143,13 +143,70 @@ class EditorTest(unittest.TestCase):
         self.assertIn("corrida-de-sapos-r36s.zip", self.get("/project"))
         self.assertTrue(os.path.isfile(os.path.join(folder, "dist", "corrida-de-sapos-r36s.zip")))
 
-    def test_sounds_are_served_only_from_sounds(self):
+    def test_files_are_served_only_from_asset_folders(self):
         self.new_game()
-        with urllib.request.urlopen(self.base + "/sound?file=sounds/bip.wav") as r:
+        with urllib.request.urlopen(self.base + "/file?name=sounds/bip.wav") as r:
             self.assertEqual(r.read(4), b"RIFF")
-        with self.assertRaises(urllib.error.HTTPError) as e:
-            urllib.request.urlopen(self.base + "/sound?file=game.json")
-        e.exception.close()
+        for name in ("game.json", "sounds/../game.json", "../x"):
+            with self.assertRaises(urllib.error.HTTPError) as e:
+                urllib.request.urlopen(self.base + "/file?name=" + urllib.parse.quote(name))
+            e.exception.close()
+
+    def upload(self, files, token=True):
+        boundary = "----mage-teste"
+        parts = []
+        fields = [("token", self.editor.token)] if token else []
+        for name, value in fields:
+            parts.append(('--%s\r\nContent-Disposition: form-data; name="%s"\r\n\r\n%s\r\n'
+                          % (boundary, name, value)).encode())
+        for filename, content in files:
+            parts.append(('--%s\r\nContent-Disposition: form-data; name="files"; '
+                          'filename="%s"\r\nContent-Type: application/octet-stream\r\n\r\n'
+                          % (boundary, filename)).encode("utf-8") + content + b"\r\n")
+        body = b"".join(parts) + ("--%s--\r\n" % boundary).encode()
+        request = urllib.request.Request(self.base + "/upload", body, {
+            "Content-Type": "multipart/form-data; boundary=" + boundary})
+        try:
+            with self.opener.open(request) as r:
+                return r.status
+        except urllib.error.HTTPError as e:
+            with e:
+                return e.code
+
+    def test_upload_sorts_files_by_kind(self):
+        folder = self.new_game()
+        status = self.upload([("pulo.ogg", b"OggS"), ("herói.png", b"\x89PNG"),
+                              ("fase1.json", b"{}"), ("mapa.txt", b"#")])
+        self.assertEqual(status, 303)
+        for rel, data in (("sounds/pulo.ogg", b"OggS"), ("images/herói.png", b"\x89PNG"),
+                          ("data/fase1.json", b"{}"), ("data/mapa.txt", b"#")):
+            with open(os.path.join(folder, *rel.split("/")), "rb") as f:
+                self.assertEqual(f.read(), data)
+        html = self.get("/project")
+        self.assertIn("Arquivos adicionados: 4.", html)
+        self.assertIn("images/herói.png", html)
+        self.assertIn('src="/file?name=images/her%C3%B3i.png"', html)
+        self.assertIn("Apagar data/fase1.json", html)
+
+    def test_upload_needs_the_token_and_a_good_name(self):
+        folder = self.new_game()
+        self.assertEqual(self.upload([("a.json", b"{}")], token=False), 403)
+        self.assertFalse(os.path.exists(os.path.join(folder, "data", "a.json")))
+        self.upload([("o que?.json", b"{}")])
+        self.assertIn("não vale no cartão", self.get("/project"))
+
+    def test_remove_asks_first(self):
+        folder = self.new_game()
+        bip = os.path.join(folder, "sounds", "bip.wav")
+        status, html = self.post("/remove", {"file": "sounds/bip.wav"})
+        self.assertEqual(status, 200)
+        self.assertIn("Apagar sounds/bip.wav?", html)
+        self.assertTrue(os.path.exists(bip))
+        status, _ = self.post("/remove", {"file": "sounds/bip.wav", "confirm": "1"})
+        self.assertEqual(status, 303)
+        self.assertFalse(os.path.exists(bip))
+        self.post("/remove", {"file": "game.json", "confirm": "1"})
+        self.assertTrue(os.path.exists(os.path.join(folder, "game.json")))
 
     def test_open_code_uses_the_chosen_editor(self):
         folder = self.new_game()

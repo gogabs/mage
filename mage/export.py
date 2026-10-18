@@ -14,7 +14,7 @@ import re
 import shutil
 import zipfile
 
-from . import downloads, project
+from . import assets, downloads, project
 
 # Partes do Python que um jogo não usa: ficam fora do .exe exportado.
 PYTHON_SKIP = ("Lib/site-packages/", "Lib/test/", "Lib/idlelib/", "Lib/tkinter/",
@@ -95,11 +95,16 @@ def _zip_dir(folder, zip_path):
     os.replace(tmp, zip_path)
 
 
-def _copy_game(path, manifest, dest):
-    for full, rel in project.package_files(path, manifest):
+def _copy_game(path, manifest, dest, log=print):
+    files = project.package_files(path, manifest)
+    pipeline = assets.Pipeline(path, manifest, files, log=log)
+    for full, rel in files:
         out = os.path.join(dest, *rel.split("/"))
         os.makedirs(os.path.dirname(out), exist_ok=True)
-        shutil.copy2(full, out)
+        pipeline.copy(full, rel, out)
+    summary = pipeline.summary()
+    if summary:
+        log(summary)
 
 
 def _fresh(folder):
@@ -123,7 +128,7 @@ def r36s(path, log=print):
     gid = manifest["id"]
     stage = os.path.join(_dist(path), "r36s")
     _fresh(stage)
-    _copy_game(path, manifest, os.path.join(stage, gid))
+    _copy_game(path, manifest, os.path.join(stage, gid), log)
     out = os.path.join(_dist(path), "%s-r36s.zip" % gid)
     _zip_dir(os.path.join(stage, gid), out)
     shutil.rmtree(stage)
@@ -150,7 +155,7 @@ def windows(path, log=print):
     _fresh(stage)
     app = os.path.join(stage, title)
     game_dir = os.path.join(app, "jogo")
-    _copy_game(path, manifest, game_dir)
+    _copy_game(path, manifest, game_dir, log)
 
     dll_dir = os.path.join(game_dir, "r36s_a11y", "dll")
     project_dll = os.path.join(path, "r36s_a11y", "dll")
