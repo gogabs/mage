@@ -11,8 +11,8 @@ r36s-a11y-sdk, for the R36S handheld and Windows. Docs are in Brazilian
 Portuguese.*
 
 Tudo aqui é opcional: um `main.py` com a pasta `r36s_a11y` ao lado continua
-sendo um jogo completo, sem a engine. A engine cuida do resto, e o editor
-visual que vier depois vai usar as mesmas peças.
+sendo um jogo completo, sem a engine. A engine cuida do resto, pela linha
+de comando ou pelo editor no navegador, que usam as mesmas peças.
 
 Precisa de Python 3.7 ou mais novo, e nada além da biblioteca padrão.
 
@@ -37,8 +37,35 @@ Esc sai (no R36S, B, Select e A). O código você edita no editor que preferir
 | `check [pasta]` | Confere o `game.json`, as ações e os nomes dos arquivos, e mostra todos os problemas de uma vez |
 | `update [pasta]` | Troca a cópia do `r36s_a11y` do jogo pela que vem com a engine, sem apagar as DLLs |
 | `export [pasta] [--to r36s\|windows\|all]` | Gera em `dist/` o jogo pronto para cada plataforma |
+| `editor [pasta]` | Abre o editor no navegador (veja abaixo) |
 
 Sem pasta, os comandos usam a pasta atual.
+
+## O editor
+
+```bat
+python mage.py editor C:\jogos\corrida-de-sapos
+python mage.py editor          :: começa pela tela de criar ou abrir um jogo
+```
+
+O editor abre no navegador uma página servida só para este computador. Ela é
+feita para leitor de tela: títulos para pular entre as seções, cada campo com
+rótulo e dica, e um aviso falado depois de cada botão. Funciona sem
+JavaScript. Pela página dá para:
+
+- criar um jogo novo ou abrir um que já existe (os últimos ficam na tela inicial);
+- editar o nome, a descrição, a versão, o autor, os idiomas e as tags;
+- editar as ações: o botão do R36S, as teclas, o botão do controle e o do
+  mouse de cada uma, criar ações novas e remover as que sobraram;
+- ouvir os sons da pasta `sounds`;
+- rodar o jogo, conferir o projeto e exportar;
+- abrir o projeto no editor de código (o VS Code, se estiver instalado, ou o
+  que você escolher nas preferências) e abrir a pasta do jogo.
+
+Tudo o que o editor muda fica no `game.json`, então dá para alternar entre o
+editor, a linha de comando e o editor de código à vontade. Para fechar, Ctrl+C
+no terminal. As preferências ficam em `%APPDATA%\mage\editor.json` (ou
+`~/.config/mage/editor.json`).
 
 ## O projeto
 

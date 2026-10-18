@@ -1,10 +1,9 @@
-"""Linha de comando: new, run, check, update e export."""
+"""Linha de comando: new, run, check, update, export e editor."""
 import argparse
 import os
-import subprocess
 import sys
 
-from . import downloads, export, project
+from . import export, project
 
 
 def cmd_new(args):
@@ -14,29 +13,11 @@ def cmd_new(args):
 
 
 def cmd_run(args):
-    path = os.path.abspath(args.folder)
-    manifest = project.load(path)
-    if manifest["runtime"] != "python3":
-        raise project.ProjectError("o run ainda é só para jogos em Python")
-    if sys.platform == "win32":
-        dll = os.path.join(path, "r36s_a11y", "dll")
-        if not downloads.has_dlls(dll):
-            print("Primeira vez no Windows: baixando as DLLs do SDK para o jogo.")
-            downloads.install_dlls(dll)
-    env = dict(os.environ, A11Y_GAME_DIR=path)
-    if args.pc:
-        env["A11Y_PLATAFORMA"] = "pc"
-    return subprocess.call([sys.executable, manifest["exec"]], cwd=path, env=env)
+    return project.start_game(args.folder, pc=args.pc).wait()
 
 
 def cmd_check(args):
-    path = os.path.abspath(args.folder)
-    manifest, problems = project.check(path)
-    if not problems:
-        try:
-            files = project.package_files(path, manifest)
-        except project.ProjectError as e:
-            problems = str(e).splitlines()
+    manifest, problems, files = project.check_all(os.path.abspath(args.folder))
     if problems:
         for p in problems:
             print("- " + p)
@@ -56,6 +37,11 @@ def cmd_export(args):
     for target in targets:
         export.TARGETS[target](args.folder)
     return 0
+
+
+def cmd_editor(args):
+    from . import editor
+    return editor.serve(args.folder, port=args.port, browser=not args.no_browser)
 
 
 def _self():
@@ -92,6 +78,12 @@ def parser():
     s.add_argument("folder", nargs="?", default=".", help="pasta do jogo; padrão: a atual")
     s.add_argument("--to", choices=["all"] + list(export.TARGETS), default="all")
     s.set_defaults(fn=cmd_export)
+
+    s = sub.add_parser("editor", help="abre o editor no navegador")
+    s.add_argument("folder", nargs="?", help="pasta do jogo; sem ela, abre a tela inicial")
+    s.add_argument("--port", type=int, default=0, help="porta local; padrão: uma livre")
+    s.add_argument("--no-browser", action="store_true", help="não abre o navegador sozinho")
+    s.set_defaults(fn=cmd_editor)
     return p
 
 

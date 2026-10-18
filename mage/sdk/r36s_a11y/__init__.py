@@ -11,7 +11,7 @@ from .game import Game
 from .menu import Menu
 from .speech import Speech
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 CONTRACT = 1
 
 __all__ = [
