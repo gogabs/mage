@@ -14,6 +14,7 @@ import os
 import re
 import shutil
 import struct
+import subprocess
 import sys
 import unicodedata
 import wave
@@ -66,7 +67,11 @@ def check(path):
         return {}, ["o game.json não é um JSON válido: %s" % e]
     if not isinstance(manifest, dict):
         return {}, ["o game.json precisa ser um objeto {...}"]
+    return manifest, manifest_problems(manifest, path)
 
+
+def manifest_problems(manifest, path):
+    """Os problemas de um game.json (já lido) do projeto em path."""
     problems = []
     for field in ("id", "name", "version", "contract", "runtime", "exec"):
         if field not in manifest:
@@ -91,7 +96,7 @@ def check(path):
             Actions().define(actions)
         except (ValueError, AttributeError, KeyError, TypeError) as e:
             problems.append("ações do game.json: %s" % e)
-    return manifest, problems
+    return problems
 
 
 def ignore_patterns(manifest):
@@ -215,3 +220,41 @@ def _write_beep(file, freq=880, seconds=0.15, rate=22050):
         w.setsampwidth(2)
         w.setframerate(rate)
         w.writeframes(struct.pack("<%dh" % frames, *samples))
+
+
+def check_all(path):
+    """(game.json, [problemas], [arquivos para exportar]): o game.json, as ações e os nomes."""
+    manifest, problems = check(path)
+    files = []
+    if not problems:
+        try:
+            files = package_files(path, manifest)
+        except ProjectError as e:
+            problems = str(e).splitlines()
+    return manifest, problems, files
+
+
+def start_game(path, pc=False, log=print):
+    """Abre o jogo num processo à parte e devolve o Popen.
+
+    No Windows, baixa as DLLs do SDK para o jogo na primeira vez.
+    """
+    path = os.path.abspath(path)
+    manifest = load(path)
+    if manifest["runtime"] != "python3":
+        raise ProjectError("rodar ainda é só para jogos em Python")
+    if sys.platform == "win32":
+        from . import downloads
+        dll = os.path.join(path, "r36s_a11y", "dll")
+        if not downloads.has_dlls(dll):
+            log("Primeira vez no Windows: baixando as DLLs do SDK para o jogo.")
+            downloads.install_dlls(dll, log)
+    env = dict(os.environ, A11Y_GAME_DIR=path)
+    if pc:
+        env["A11Y_PLATAFORMA"] = "pc"
+    return subprocess.Popen([sys.executable, manifest["exec"]], cwd=path, env=env)
+
+
+def save_manifest(path, manifest):
+    """Grava o game.json do projeto, mantendo acentos legíveis."""
+    _write_json(os.path.join(path, "game.json"), manifest)
