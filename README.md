@@ -11,8 +11,8 @@ r36s-a11y-sdk, for the R36S handheld and Windows. Docs are in Brazilian
 Portuguese.*
 
 Tudo aqui é opcional: um `main.py` com a pasta `r36s_a11y` ao lado continua
-sendo um jogo completo, sem a engine. A engine cuida do resto, com a linha de comando ou com o
-visual que vier depois vai usar as mesmas peças.
+sendo um jogo completo, sem a engine. A engine cuida do resto, pela linha
+de comando ou pelo editor no navegador, que usam as mesmas peças.
 
 Precisa de Python 3.7 ou mais novo, e nada além da biblioteca padrão.
 
