@@ -3,7 +3,8 @@
 Regras do contrato:
   - usa a voz do usuário (seção "voice" de /roms/a11y/config.json), nunca
     valores próprios;
-  - fala interrompe a anterior por padrão; fila é opcional.
+  - fala interrompe a anterior por padrão; fila é opcional;
+  - com a fala desligada no console (Fn + Y), não fala nada.
 
 Sem Speech Dispatcher (no PC, por exemplo), a fala vai para o terminal.
 """
@@ -13,6 +14,16 @@ import sys
 
 CONFIG = "/roms/a11y/config.json"
 LEGACY_VOICE_CONF = "/opt/a11y/etc/voz.conf"  # antes do config.json
+SPEECH_OFF = "/run/a11y-fala/fala-desligada"  # criado e apagado pelo a11yd (Fn + Y)
+
+
+def speech_off():
+    """True enquanto a fala está desligada no console (Fn + Y).
+
+    Serve para quem enxerga jogar sem o leitor de tela; o arquivo fica na
+    /run e some ao religar o console.
+    """
+    return os.path.exists(os.environ.get("A11Y_FALA_DESLIGADA") or SPEECH_OFF)
 
 
 def _voice_conf():
@@ -220,6 +231,10 @@ class Speech:
 
     def say(self, text, queue=False, on_done=None):
         """Fala o texto. on_done(done) é chamado ao terminar (done=False se cortada)."""
+        if speech_off():
+            if on_done is not None:
+                self.events.append((on_done, True))
+            return
         for attempt in (1, 2):
             if not self._ensure():
                 print("[fala] " + text, file=sys.stderr)
