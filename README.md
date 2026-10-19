@@ -33,7 +33,7 @@ Esc sai (no R36S, B, Select e A). O código você edita no editor que preferir
 
 | Comando | O que faz |
 |---|---|
-| `new <pasta> [--name] [--author]` | Cria o jogo a partir do modelo: `game.json` com ações, `main.py`, um bip em `sounds/` e a cópia do `r36s_a11y`. O nome da pasta vira o id |
+| `new <pasta> [--name] [--author]` | Cria o jogo a partir do modelo: `game.json` com ações, `main.py`, as pastas `sounds/` (com um bip), `images/` e `data/` e a cópia do `r36s_a11y`. O nome da pasta vira o id |
 | `run [pasta] [--pc]` | Abre o jogo. No Windows, baixa as DLLs na primeira vez. No Linux, `--pc` abre a janela em vez de ler o controle do R36S |
 | `check [pasta]` | Confere o `game.json`, as ações e os nomes dos arquivos, e mostra todos os problemas de uma vez |
 | `update [pasta]` | Troca a cópia do `r36s_a11y` do jogo pela que vem com a engine, sem apagar as DLLs |
@@ -58,7 +58,8 @@ JavaScript. Pela página dá para:
 - editar o nome, a descrição, a versão, o autor, os idiomas e as tags;
 - editar as ações: o botão do R36S, as teclas, o botão do controle e o do
   mouse de cada uma, criar ações novas e remover as que sobraram;
-- ouvir os sons da pasta `sounds`;
+- adicionar sons, imagens e dados (cada um vai para a sua pasta), ouvir os
+  sons, ver as imagens e apagar arquivos;
 - rodar o jogo, conferir o projeto e exportar;
 - abrir o projeto no editor de código (o VS Code, se estiver instalado, ou o
   que você escolher nas preferências) e abrir a pasta do jogo.
@@ -78,8 +79,13 @@ corrida-de-sapos/
   game.json
   main.py
   r36s_a11y/     a cópia do Mage Core que o jogo usa
-  sounds/
+  sounds/        sons: WAV, OGG ou FLAC
+  images/        imagens e sprites: PNG, JPG, BMP, GIF ou WebP
+  data/          o resto: JSON, texto, fases, mapas
 ```
+
+O código carrega tudo pelo caminho relativo à pasta do jogo, como
+`game.sound.load("bip", "sounds/bip.wav")` e `game.gfx.image("images/heroi.png")`.
 
 ### Ações no game.json
 
@@ -117,6 +123,22 @@ R36S). Para deixar outras coisas de fora:
 
 Um padrão sem `/` vale em qualquer pasta, com `/` no começo só na raiz do
 jogo, e com `/` no meio para o caminho inteiro (`sounds/velhos`).
+
+### Sons comprimidos
+
+Na exportação, cada WAV vira OGG Vorbis, que costuma ficar de 5 a 10 vezes menor (a
+pasta do projeto continua com os WAV). O código não muda: pedindo
+`"sounds/bip.wav"`, o `r36s_a11y` 0.4.0 ou mais novo acha o `sounds/bip.ogg`.
+Um WAV que já tem um OGG com o mesmo nome vai como está. A conversão usa a
+libsndfile: no Windows é a DLL que o Mage Core já baixa; no Linux, o pacote
+`libsndfile1`. Para mandar os WAV sem converter:
+
+```json
+"export": {"compress_sounds": false}
+```
+
+Jogos com uma cópia antiga do `r36s_a11y` mandam os WAV como estão, até um
+`mage.py update`.
 
 Como o cartão do R36S é exFAT, a exportação recusa links simbólicos, nomes
 com `< > : " \ | ? *` e dois arquivos cujo nome só muda em maiúsculas.

@@ -274,7 +274,7 @@ def install(module):
         if self.available:
             _bind(self.al)
     def stream(self, name, path):
-        full = path if os.path.isabs(path) else os.path.join(self.base_dir, path)
+        full = module.sound_file(path if os.path.isabs(path) else os.path.join(self.base_dir, path))
         sound = StreamSound(self, name, full)
         self.sounds[name] = sound
         return sound

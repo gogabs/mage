@@ -99,6 +99,25 @@ def decode_wav(path):
     return channels, width, rate, data
 
 
+SOUND_EXTENSIONS = (".ogg", ".wav")
+
+
+def sound_file(path):
+    """O arquivo de som em path ou, se ele não existir, o de mesmo nome com a
+    outra extensão (.ogg ou .wav). Assim o código pode pedir "sounds/bip.wav"
+    e achar o "sounds/bip.ogg" que a exportação comprimiu, ou pedir só
+    "sounds/bip"."""
+    if os.path.exists(path):
+        return path
+    root, ext = os.path.splitext(path)
+    if ext.lower() not in SOUND_EXTENSIONS:
+        root = path
+    for alt in SOUND_EXTENSIONS:
+        if os.path.exists(root + alt):
+            return root + alt
+    return path
+
+
 _vorbis = None
 
 
@@ -340,8 +359,10 @@ class Audio:
 
     # --- sons --------------------------------------------------------
     def load(self, name, path):
-        """Carrega um WAV ou OGG (relativo à pasta do jogo) com um nome."""
-        full = path if os.path.isabs(path) else os.path.join(self.base_dir, path)
+        """Carrega um WAV ou OGG (relativo à pasta do jogo) com um nome.
+
+        Se o arquivo não existir, vale o de mesmo nome com a outra extensão."""
+        full = sound_file(path if os.path.isabs(path) else os.path.join(self.base_dir, path))
         if not self.available:
             sound = Sound(self, name, None, 1)
             self.sounds[name] = sound

@@ -20,9 +20,11 @@ import sys
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from email import policy
+from email.parser import BytesParser
 from urllib.parse import parse_qs, quote, urlsplit
 
-from . import export, project
+from . import assets, export, project
 from r36s_a11y.actions import (MOUSE_BUTTONS, MOUSE_LABELS, PAD_BUTTONS, PAD_LABELS,
                                R36S_BUTTONS, R36S_LABELS, XBOX, Actions)
 
@@ -158,6 +160,9 @@ button.secundario { background: transparent; color: var(--destaque); }
 .aviso.erro { border-color: var(--erro); }
 .dica { font-size: 1rem; margin: .25rem 0 0; }
 .caixa { background: var(--caixa); border-radius: .5rem; padding: .5rem 1rem; }
+.arquivos li { margin: .5rem 0; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.arquivos img { max-width: 96px; max-height: 96px; image-rendering: pixelated; }
+.arquivos form { display: inline; }
 nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
 .pular { position: absolute; left: -999px; }
 .pular:focus { left: 1rem; top: 1rem; background: var(--fundo); padding: .5rem; }
@@ -243,7 +248,7 @@ def project_page(token, path, manifest, rows=None):
     rows = action_rows(manifest.get("actions")) if rows is None else rows
     m = manifest
     nav = ('<nav aria-label="Seções"><ul><li><a href="#propriedades">Propriedades</a></li>'
-           '<li><a href="#acoes">Ações</a></li><li><a href="#sons">Sons</a></li>'
+           '<li><a href="#acoes">Ações</a></li><li><a href="#arquivos">Arquivos</a></li>'
            '<li><a href="#ferramentas">Rodar e exportar</a></li>'
            '<li><a href="/">Outro jogo</a></li><li><a href="/settings">Preferências</a></li></ul></nav>')
     head = '<h1>%s</h1><p class="caixa">Pasta: %s</p>%s' % (esc(m.get("name", "")), esc(path), nav)
@@ -283,16 +288,7 @@ def project_page(token, path, manifest, rows=None):
                    '<input type="hidden" name="count" value="%d">' % len(rows) + "".join(fieldsets),
                    label="Salvar ações")
 
-    sounds_dir = os.path.join(path, "sounds")
-    sounds = []
-    for root, _, names in os.walk(sounds_dir):
-        for name in sorted(names):
-            if name.lower().endswith((".wav", ".ogg")):
-                rel = os.path.relpath(os.path.join(root, name), path).replace(os.sep, "/")
-                sounds.append('<li><span id="som-%d">%s</span> <audio controls preload="none" '
-                              'aria-labelledby="som-%d" src="/sound?file=%s"></audio></li>'
-                              % (len(sounds), esc(rel), len(sounds), quote(rel)))
-    sound_list = ("<ul>%s</ul>" % "".join(sounds)) if sounds else "<p>Nenhum som em sounds/.</p>"
+    files = files_section(token, path)
 
     tools = ("".join([
         form("/run", token, "", label="Rodar o jogo"),
@@ -312,8 +308,52 @@ def project_page(token, path, manifest, rows=None):
               'dispositivo. O jogo lê isto do game.json sozinho.</p>'
               '<p>Nomes de teclas: space, return, escape, tab, backspace, up, down, left, right, '
               'letras, números, f1 a f12, shift, alt. Separe várias com vírgula.</p>' + actions
-            + '<h2 id="sons">Sons</h2>' + sound_list
+            + '<h2 id="arquivos">Arquivos</h2>' + files
             + '<h2 id="ferramentas">Rodar e exportar</h2>' + tools)
+
+
+def files_section(token, path):
+    """Sons, imagens e dados do jogo, com o formulário para adicionar mais."""
+    upload = ('<form method="post" action="/upload" enctype="multipart/form-data">'
+              '<input type="hidden" name="token" value="%s">'
+              '<label for="files">Arquivos para adicionar</label>'
+              '<input type="file" id="files" name="files" multiple aria-describedby="files-dica">'
+              '<p class="dica" id="files-dica">Sons vão para sounds, imagens para images e o '
+              'resto (JSON, texto, fases) para data. Um arquivo com o mesmo nome é '
+              'substituído.</p><button type="submit">Adicionar arquivos</button></form>'
+              % esc(token))
+    parts = [upload]
+    n = 0
+    for folder, items in assets.listing(path).items():
+        parts.append("<h3>%s <span class=\"dica\">(%s)</span></h3>" % (
+            assets.LABELS[folder], folder))
+        if not items:
+            parts.append("<p>Nenhum arquivo em %s.</p>" % folder)
+            continue
+        rows = []
+        for rel, size in items:
+            n += 1
+            label = '<span id="arq-%d">%s</span>, %s' % (n, esc(rel), assets.size_text(size))
+            preview = ""
+            if folder == "sounds" and rel.lower().endswith((".wav", ".ogg")):
+                preview = (' <audio controls preload="none" aria-labelledby="arq-%d" '
+                           'src="/file?name=%s"></audio>' % (n, quote(rel)))
+            elif folder == "images":
+                preview = ' <img alt="" loading="lazy" src="/file?name=%s">' % quote(rel)
+            remove = form("/remove", token, '<input type="hidden" name="file" value="%s">'
+                          % esc(rel), label="Apagar %s" % rel, cls="secundario")
+            rows.append("<li>%s%s%s</li>" % (label, preview, remove))
+        parts.append("<ul class=\"arquivos\">%s</ul>" % "".join(rows))
+    return "".join(parts)
+
+
+def remove_page(token, rel):
+    return ("<h1>Apagar %s?</h1><p>O arquivo sai da pasta do jogo e não vai para a "
+            "lixeira.</p>" % esc(rel)
+            + form("/remove", token, '<input type="hidden" name="file" value="%s">'
+                   '<input type="hidden" name="confirm" value="1">' % esc(rel),
+                   label="Apagar")
+            + '<p><a href="/project#arquivos">Cancelar</a></p>')
 
 
 def settings_page(token, config):
@@ -403,11 +443,9 @@ class Handler(BaseHTTPRequestHandler):
                 ed.path = None
                 return self.redirect("/")
             return self.send_page(manifest.get("name", "Jogo"), project_page(ed.token, ed.path, manifest))
-        if url.path == "/sound" and ed.path:
-            rel = parse_qs(url.query).get("file", [""])[0]
-            full = os.path.realpath(os.path.join(ed.path, rel))
-            sounds = os.path.realpath(os.path.join(ed.path, "sounds"))
-            if not full.startswith(sounds + os.sep) or not os.path.isfile(full):
+        if url.path == "/file" and ed.path:
+            full = assets.inside(ed.path, parse_qs(url.query).get("name", [""])[0])
+            if not full:
                 return self.deny(404)
             with open(full, "rb") as f:
                 data = f.read()
@@ -424,8 +462,18 @@ class Handler(BaseHTTPRequestHandler):
         if not self.local():
             return self.deny()
         size = int(self.headers.get("Content-Length", "0") or 0)
-        raw = self.rfile.read(size).decode("utf-8")
-        data = {k: v[-1] for k, v in parse_qs(raw, keep_blank_values=True).items()}
+        if size > assets.MAX_UPLOAD:
+            self.close_connection = True
+            self.editor.say("Os arquivos passam de %s; adicione menos de uma vez." %
+                            assets.size_text(assets.MAX_UPLOAD), kind="erro")
+            return self.redirect("/project#arquivos")
+        raw = self.rfile.read(size)
+        ctype = self.headers.get("Content-Type", "")
+        if ctype.startswith("multipart/form-data"):
+            data = parse_multipart(ctype, raw)
+        else:
+            data = {k: v[-1] for k, v in
+                    parse_qs(raw.decode("utf-8"), keep_blank_values=True).items()}
         if data.get("token") != self.editor.token:
             return self.deny()
         route = urlsplit(self.path).path
@@ -533,10 +581,35 @@ class Handler(BaseHTTPRequestHandler):
         targets = list(export.TARGETS) if to == "all" else [to]
         if any(t not in export.TARGETS for t in targets):
             raise project.ProjectError("destino desconhecido: %s" % to)
-        done = [export.TARGETS[t](self.editor.path, log=lambda *_: None) for t in targets]
+        notes = []
+        done = [export.TARGETS[t](self.editor.path, log=notes.append) for t in targets]
+        sounds = sorted(set(n for n in notes if n.startswith(("Sons:", "Os WAV", "ficou em WAV"))))
         self.editor.say("Exportado. Os arquivos estão na pasta dist do jogo:",
-                        [os.path.basename(p) for p in done])
+                        [os.path.basename(p) for p in done] + sounds)
         return self.redirect("/project")
+
+    def post_upload(self, data):
+        self._manifest()
+        uploads = [f for f in data.get("files", []) if f[0]]
+        if not uploads:
+            raise project.ProjectError("escolha pelo menos um arquivo")
+        added = []
+        for name, content in uploads:
+            rel, replaced = assets.add(self.editor.path, name, content)
+            added.append("%s%s" % (rel, " (substituído)" if replaced else ""))
+        self.editor.say("Arquivos adicionados: %d." % len(added), added)
+        return self.redirect("/project#arquivos")
+
+    def post_remove(self, data):
+        self._manifest()
+        rel = data.get("file", "")
+        if not assets.inside(self.editor.path, rel):
+            raise project.ProjectError("%s não é um arquivo de sounds, images ou data" % rel)
+        if data.get("confirm") != "1":
+            return self.send_page("Apagar arquivo", remove_page(self.editor.token, rel))
+        assets.remove(self.editor.path, rel)
+        self.editor.say("%s apagado." % rel)
+        return self.redirect("/project#arquivos")
 
     def post_settings(self, data):
         config = load_config()
@@ -548,6 +621,25 @@ class Handler(BaseHTTPRequestHandler):
         save_config(config)
         self.editor.say("Preferências salvas.")
         return self.redirect("/project" if self.editor.path else "/")
+
+
+def parse_multipart(ctype, raw):
+    """Os campos de um formulário multipart: texto como str, arquivos em
+    data["files"] como [(nome, bytes)]."""
+    msg = BytesParser(policy=policy.HTTP).parsebytes(
+        b"Content-Type: " + ctype.encode("latin-1") + b"\r\n\r\n" + raw)
+    data = {"files": []}
+    for part in msg.iter_parts():
+        name = part.get_param("name", header="content-disposition")
+        content = part.get_payload(decode=True) or b""
+        filename = part.get_filename()
+        if filename is not None:
+            # o navegador manda o nome em UTF-8 cru; o parser guarda os bytes como substitutos
+            filename = filename.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
+            data["files"].append((filename, content))
+        elif name:
+            data[name] = content.decode("utf-8", "replace")
+    return data
 
 
 def make_server(path=None, port=0):
