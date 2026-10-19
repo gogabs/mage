@@ -22,7 +22,7 @@ PYTHON_SKIP = ("Lib/site-packages/", "Lib/test/", "Lib/idlelib/", "Lib/tkinter/"
                "Lib/pydoc_data/", "Lib/__phello__/", "include/", "libs/",
                "python.exe", "Lib/turtle.py")
 
-LAUNCHER = '''"""Abre o jogo quando o executável começa. Gerado pelo MAGE ("mage.py export").
+LAUNCHER = '''"""Abre o jogo quando o executável começa. Gerado pelo Mage ("mage.py export").
 
 Este Python é só do jogo: o python3XX._pth ao lado o isola do Python
 instalado no computador e faz ele importar este arquivo ao começar.

@@ -1,4 +1,4 @@
-"""O editor do MAGE: uma página local, no navegador, feita para leitor de tela.
+"""O editor do Mage: uma página local, no navegador, feita para leitor de tela.
 
     python mage.py editor [pasta-do-jogo]
 
@@ -179,7 +179,7 @@ def page(title, body, notice=None):
                     "<ul>%s</ul>" % items if items else ""))
     return ('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
-            '<title>%s · MAGE</title><style>%s</style></head><body>'
+            '<title>%s · Mage</title><style>%s</style></head><body>'
             '<a class="pular" href="#conteudo">Pular para o conteúdo</a>'
             '<main id="conteudo">%s%s</main></body></html>'
             % (esc(title), STYLE, alert, body))
@@ -222,13 +222,13 @@ def home_page(token, recent):
                                          '<input type="hidden" name="folder" value="%s">' % esc(p),
                                          label="Abrir %s" % p, cls="secundario")
                     for p in recent if os.path.isfile(os.path.join(p, "game.json")))
-    body = ['<h1>MAGE</h1><p>Crie um jogo novo ou abra um que já existe.</p>',
+    body = ['<h1>Mage</h1><p>Crie um jogo novo ou abra um que já existe.</p>',
             '<h2>Novo jogo</h2>',
             form("/new", token,
                  field("folder", "Pasta do jogo novo",
                        hint="Caminho completo, como C:\\jogos\\corrida-de-sapos. "
                             "O nome da pasta vira o id do jogo.")
-                 + field("name", "Nome do jogo", hint="O nome que a galeria fala.")
+                 + field("name", "Nome do jogo", hint="O nome que o Luma fala.")
                  + field("author", "Autor"), label="Criar jogo"),
             '<h2>Abrir jogo</h2>',
             form("/open", token, field("folder", "Pasta do jogo", hint="A pasta que tem o game.json."),
@@ -249,17 +249,17 @@ def project_page(token, path, manifest, rows=None):
     head = '<h1>%s</h1><p class="caixa">Pasta: %s</p>%s' % (esc(m.get("name", "")), esc(path), nav)
 
     props = form("/properties", token,
-                 field("name", "Nome", m.get("name", ""), "O nome que a galeria fala.")
+                 field("name", "Nome", m.get("name", ""), "O nome que o Luma fala.")
                  + field("id", "Id", m.get("id", ""), "Igual ao nome da pasta; não muda por aqui.",
                          readonly=True)
                  + field("description", "Descrição", m.get("description", ""),
-                         "Falada quando o jogador pede detalhes na galeria.")
+                         "Falada quando o jogador pede detalhes no Luma.")
                  + field("version", "Versão", m.get("version", ""), "Como 1.0.0.")
                  + field("author", "Autor", m.get("author", ""))
                  + field("languages", "Idiomas", ", ".join(m.get("languages", [])),
                          "Separe com vírgula, como pt-BR, en.")
                  + field("tags", "Tags", ", ".join(m.get("tags", [])),
-                         "Para o filtro da galeria; separe com vírgula."),
+                         "Para o filtro do Luma; separe com vírgula."),
                  label="Salvar propriedades")
 
     fieldsets = []
@@ -562,7 +562,7 @@ def make_server(path=None, port=0):
 def serve(path=None, port=0, browser=True):
     server, editor = make_server(path, port)
     url = "http://127.0.0.1:%d/%s" % (server.server_address[1], "project" if editor.path else "")
-    print("Editor do MAGE em %s (Ctrl+C para fechar)" % url)
+    print("Editor do Mage em %s (Ctrl+C para fechar)" % url)
     if browser:
         threading.Timer(0.5, webbrowser.open, [url]).start()
     try:

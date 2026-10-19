@@ -1,14 +1,15 @@
-# MAGE
+# Mage
 
-**Modular Awesome Game Engine**: a engine dos jogos acessíveis do R36S.
+A engine dos jogos acessíveis do R36S (Luma/ArkOS).
 
 Cria, roda, confere e exporta jogos acessíveis feitos com o
-[r36s-a11y-sdk](https://github.com/gogabs/r36s-a11y-sdk): um zip para o
-cartão do R36S e um `.exe` para Windows que abre sem instalar nada.
+[Mage Core](https://github.com/gogabs/r36s-a11y-sdk), o núcleo da engine:
+um zip para o cartão do R36S e um `.exe` para Windows que abre sem instalar
+nada.
 
-*MAGE (Modular Awesome Game Engine) creates, runs, checks and exports accessible audio games built with the
-r36s-a11y-sdk, for the R36S handheld and Windows. Docs are in Brazilian
-Portuguese.*
+*Mage creates, runs, checks and exports accessible audio games built with
+Mage Core, its core library, for the R36S handheld (Luma/ArkOS) and Windows.
+Docs are in Brazilian Portuguese.*
 
 Tudo aqui é opcional: um `main.py` com a pasta `r36s_a11y` ao lado continua
 sendo um jogo completo, sem a engine. A engine cuida do resto, pela linha
@@ -76,13 +77,13 @@ Um projeto é a pasta do jogo, no formato do
 corrida-de-sapos/
   game.json
   main.py
-  r36s_a11y/     a cópia do SDK que o jogo usa
+  r36s_a11y/     a cópia do Mage Core que o jogo usa
   sounds/
 ```
 
 ### Ações no game.json
 
-As ações ficam no `game.json`, e o `Game()` do SDK as registra sozinho, no
+As ações ficam no `game.json`, e o `Game()` do Mage Core as registra sozinho, no
 mesmo formato de `game.actions`:
 
 ```json
@@ -102,7 +103,7 @@ nome no dispositivo em uso: "espaço" no teclado, "B" no R36S, "A" no Xbox.
 - **Windows**: `dist/<id>-windows.zip`, com a pasta do jogo e o
   `<Nome do Jogo>.exe`. Quem joga só descompacta e abre o `.exe`, sem instalar
   Python. Dentro vai o Python 3.13 oficial (do pacote NuGet da Python Software
-  Foundation), isolado do Python do computador, as DLLs do SDK e o jogo, na
+  Foundation), isolado do Python do computador, as DLLs do Mage Core e o jogo, na
   pasta `jogo`. Os saves e o log (`<id>.log`, com o erro se o jogo fechar com
   erro) ficam em `%APPDATA%\r36s-a11y\<id>`.
 
@@ -132,19 +133,19 @@ isola esse Python do instalado no computador e faz ele importar o
 `sitecustomize.py`, que abre `jogo/main.py`, manda a saída para o log e
 avisa numa caixa de mensagem se o jogo fechar com erro.
 
-## A versão do SDK
+## A versão do Mage Core
 
 A engine traz a cópia do `r36s_a11y` que vai para os jogos em
-`mage/sdk/`, numa versão fixa: um jogo exportado leva sempre o SDK com
-que foi testado. `mage/sdk/origin.json` diz a versão e o commit. Para
-trazer um SDK mais novo:
+`mage/sdk/`, numa versão fixa: um jogo exportado leva sempre o Mage Core
+com que foi testado. `mage/sdk/origin.json` diz a versão e o commit. Para
+trazer um Mage Core mais novo:
 
 ```bash
 python tools/sync_sdk.py ../r36s-a11y-sdk
 python -m unittest discover -s tests
 ```
 
-Depois, `python mage.py update <pasta>` leva o SDK novo para cada jogo.
+Depois, `python mage.py update <pasta>` leva o Mage Core novo para cada jogo.
 
 ## Testes
 
