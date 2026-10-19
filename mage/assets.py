@@ -43,7 +43,9 @@ def folder_for(name):
 
 def clean_name(name):
     """Só o nome do arquivo, conferido para valer no cartão (exFAT) e no Windows."""
-    name = os.path.basename(name.replace("\\", "/")).strip()
+    # Corta pela última barra à mão: no Windows o os.path.basename lê "a:" como
+    # letra de drive e esconderia o ":" que o cartão não aceita.
+    name = name.replace("\\", "/").rsplit("/", 1)[-1].strip()
     if not name or name in (".", "..") or BAD_NAME.search(name) or name.endswith((".", " ")):
         raise project.ProjectError("o nome de arquivo \"%s\" não vale no cartão do R36S" % name)
     return name
