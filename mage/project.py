@@ -1,7 +1,7 @@
-"""O projeto de um jogo: a pasta com game.json, o código e a cópia do SDK.
+"""O projeto de um jogo: a pasta com game.json, o código e a cópia do Mage Core.
 
 O game.json é o mesmo do contrato da plataforma (docs/contrato.md), com dois
-campos opcionais a mais que o SDK e a engine entendem:
+campos opcionais a mais que o Mage Core e a engine entendem:
 
   "actions": as ações do jogo, no formato de Game.actions (r36s_a11y/actions.py);
   "export":  {"ignore": [...]} padrões de arquivos que não vão para a exportação,
@@ -23,7 +23,7 @@ import unicodedata
 import wave
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-# A versão do SDK que a engine copia para os jogos (tools/sync_sdk.py).
+# A versão do Mage Core que a engine copia para os jogos (tools/sync_sdk.py).
 SDK_DIR = os.path.join(HERE, "sdk")
 SDK_PY = os.path.join(SDK_DIR, "r36s_a11y")
 TEMPLATE = os.path.join(HERE, "template")
@@ -169,7 +169,7 @@ def update_sdk(path, log=print):
     for name in sorted(os.listdir(SDK_PY)):
         if name.endswith(".py"):
             shutil.copy2(os.path.join(SDK_PY, name), os.path.join(dest, name))
-    log("SDK %s copiado para %s" % (sdk_version(), dest))
+    log("Mage Core %s copiado para %s" % (sdk_version(), dest))
 
 
 def sdk_version():
@@ -246,7 +246,7 @@ def check_all(path):
 def start_game(path, pc=False, log=print):
     """Abre o jogo num processo à parte e devolve o Popen.
 
-    No Windows, baixa as DLLs do SDK para o jogo na primeira vez.
+    No Windows, baixa as DLLs do Mage Core para o jogo na primeira vez.
     """
     path = os.path.abspath(path)
     manifest = load(path)
@@ -256,7 +256,7 @@ def start_game(path, pc=False, log=print):
         from . import downloads
         dll = os.path.join(path, "r36s_a11y", "dll")
         if not downloads.has_dlls(dll):
-            log("Primeira vez no Windows: baixando as DLLs do SDK para o jogo.")
+            log("Primeira vez no Windows: baixando as DLLs do Mage Core para o jogo.")
             downloads.install_dlls(dll, log)
     env = dict(os.environ, A11Y_GAME_DIR=path)
     if pc:

@@ -1,6 +1,6 @@
 """Downloads conferidos pelo SHA-256: as DLLs do r36s_a11y e o Python do Windows.
 
-A lista das DLLs é a mesma do tools/preparar_windows.py do SDK; mude as duas juntas.
+A lista das DLLs é a mesma do tools/preparar_windows.py do Mage Core; mude as duas juntas.
 
 Tudo vem de lançamentos oficiais (GitHub da SDL e da OpenAL Soft, PyPI e o
 pacote NuGet do Python, publicado pela própria Python Software Foundation).

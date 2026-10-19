@@ -3,8 +3,8 @@
     python tools/sync_sdk.py ../r36s-a11y-sdk
 
 Copia python/r36s_a11y (sem DLLs nem __pycache__) para mage/sdk/ e
-grava em mage/sdk/origin.json a versão e o commit do SDK, para saber
-de onde veio a cópia. Rode quando quiser que os jogos passem a usar um SDK
+grava em mage/sdk/origin.json a versão e o commit do Mage Core, para saber
+de onde veio a cópia. Rode quando quiser que os jogos passem a usar um Mage Core
 mais novo e teste antes de mandar.
 """
 import json
@@ -30,7 +30,7 @@ def main(argv):
     dirty = subprocess.check_output(["git", "-C", sdk, "status", "--porcelain", "python/r36s_a11y"],
                                     universal_newlines=True).strip()
     if dirty:
-        sys.exit("o r36s_a11y do SDK tem mudanças sem commit; faça o commit antes")
+        sys.exit("o r36s_a11y do Mage Core tem mudanças sem commit; faça o commit antes")
     with open(os.path.join(src, "__init__.py"), encoding="utf-8") as f:
         version = re.search(r'__version__ = "([^"]+)"', f.read()).group(1)
 
@@ -45,7 +45,7 @@ def main(argv):
         json.dump({"repository": "gogabs/r36s-a11y-sdk", "version": version, "commit": commit},
                   f, indent=2)
         f.write("\n")
-    print("SDK %s (%s) copiado para %s" % (version, commit[:7], out))
+    print("Mage Core %s (%s) copiado para %s" % (version, commit[:7], out))
 
 
 if __name__ == "__main__":
